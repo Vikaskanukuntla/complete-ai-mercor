@@ -41,10 +41,7 @@ export function Form() {
                 <h1 className="bg-gradient-to-b from-foreground to-foreground/60 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
                     AI Interview Kickstart
                 </h1>
-                <p className="mt-4 max-w-md text-balance text-base text-muted-foreground">
-                    Drop your GitHub profile and start a live, voice-driven interview tailored to
-                    your work. Get instant feedback when you're done.
-                </p>
+                
 
                 <div className="mt-10 w-full">
                     <div className="flex items-center gap-2 rounded-xl border border-border bg-card/60 p-2 shadow-sm backdrop-blur focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/30">
