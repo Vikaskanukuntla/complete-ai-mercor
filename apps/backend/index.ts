@@ -5,39 +5,45 @@ import cors from "cors";
 import { prisma } from "./db";
 import { initSideband } from "./sideband";
 import { calculateResult } from "./result";
+import { askGroq } from "./groq-chat";
+import multer from "multer";
+import { extractResumeText } from "./scrapers/resume";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(express.text({ type: ["application/sdp", "text/plain"] }));
 
-app.post("/api/v1/pre-interview", async (req, res) => { 
-    const { success, data } = PreInterviewBody.safeParse(req.body) ;
+app.post("/api/v1/pre-interview", upload.single("resume"), async (req, res) => {
+    const { success, data } = PreInterviewBody.safeParse(req.body);
 
     if (!success) {
-        res.status(411).json({
-            message: "Incorrect body"
-        });
-        return 
+        res.status(411).json({ message: "Incorrect body" });
+        return;
     }
 
-    // TODO: URL can be very malformed, probably use an SLM here?
     const githubUrl = data.github.endsWith("/") ? data.github.slice(0, -1) : data.github;
-
     const githubUsername = githubUrl.split("/").pop()!;
-
     const githubData = await scrapeGithub(githubUsername);
+
+    // Extract resume text if file uploaded
+    let resumeText = null;
+    if (req.file) {
+        resumeText = await extractResumeText(req.file.buffer);
+    }
 
     const interview = await prisma.interview.create({
         data: {
             githubMetadata: JSON.stringify(githubData),
+            resumeText: resumeText,
             status: "Pre"
         }
-    })
+    });
 
     res.json({ id: interview.id });
-})
-
+});
 app.post("/api/v1/session/:interviewId", async (req, res) => {
     
     const sessionConfig = JSON.stringify({
@@ -132,5 +138,16 @@ app.get("/api/v1/result/:interviewId", async (req, res) => {
     })
   }
 })
+
+app.post("/api/v1/groq/ask/:interviewId", async (req, res) => {
+  const { message } = req.body;
+  try {
+      const reply = await askGroq(req.params.interviewId, message);
+      res.json({ reply });
+  } catch (error) {
+      console.error("Groq error:", error);
+      res.status(500).json({ error: "Failed to get AI response" });
+  }
+});
 
 app.listen(3001);
