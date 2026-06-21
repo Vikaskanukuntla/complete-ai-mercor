@@ -72,7 +72,7 @@ export function InterviewGroq() {
                             );
                             speak(res.data.reply);
                         }
-                    }, 1500);
+                    }, 3000);
                 }
             };
 
